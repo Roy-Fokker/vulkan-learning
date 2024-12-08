@@ -1,0 +1,14 @@
+{
+	"$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+	"dependencies": [
+		"vulkan",
+		"vk-bootstrap",
+		"vulkan-memory-allocator",
+		"glm"
+	],
+	"vcpkg-configuration": {
+		"overlay-ports": [
+			"3rd-party"
+		]
+	}
+}
