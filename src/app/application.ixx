@@ -111,7 +111,7 @@ auto application::run() -> uint32_t
 		window->pump_messages();
 		input->process_messages();
 
-		renderer->update();
+		renderer->update(std::array{ 0.4f, 0.4f, 0.7f, 0.0f });
 		renderer->draw();
 
 		clock.tick();

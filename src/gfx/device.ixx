@@ -23,18 +23,30 @@ export namespace vkl::gfx
 
 		void surface_resized();
 
+		auto get_sc_extent() -> vk::Extent2D;
+
+		auto current_image_index() -> uint32_t;
+		auto next_image_index() -> uint32_t;
+		auto next_image(uint32_t current_index) -> uint32_t;
+		void submit(uint32_t index);
+		void present(uint32_t index);
+
+		auto get_cmd_buffer(uint32_t index) -> vk::CommandBuffer;
+
 	private:
 		auto create_instance() -> vkb::Instance;
 		void create_surface(const vkl::window::platform_data *internal_data);
 		void pick_gpu_and_queues(vkb::Instance &vkb_inst);
 		void create_gpu_memory_allocator();
 		void create_swapchain();
+		void create_sync_objects();
 		void create_command_pool();
 
 		void destroy_instance();
 		void destroy_surface();
 		void destroy_gpu_memory_allocator();
 		void destroy_swapchain();
+		void destroy_sync_objects();
 		void destroy_command_pool();
 
 	private:
@@ -57,7 +69,19 @@ export namespace vkl::gfx
 		std::vector<vk::Image> sc_images;
 		std::vector<vk::ImageView> sc_views;
 
+		struct image_sync
+		{
+			vk::Semaphore available;
+			vk::Semaphore rendered;
+			vk::Fence in_flight;
+		};
+		std::vector<image_sync> image_signals;
+
 		vk::CommandPool gfx_command_pool{};
+		std::vector<vk::CommandBuffer> gfx_command_buffers;
+
+		uint32_t current_frame   = 0;
+		uint32_t max_frame_count = 0;
 	};
 }
 
@@ -115,6 +139,7 @@ device::device(const vkl::window::platform_data *internal_data)
 	create_gpu_memory_allocator();
 
 	create_swapchain();
+	create_sync_objects();
 
 	create_command_pool();
 }
@@ -271,10 +296,32 @@ void device::create_swapchain()
 		sc_views.push_back(img_vw);
 	});
 
+	max_frame_count = static_cast<uint32_t>(sc_views.size());
+	current_frame   = 0;
+
 	std::println("{}Swapchain created.{}\n"
 	             "\tImage size: {} x {}\n"
 	             "\tImage count: {}",
 	             CLR::GRN, CLR::RESET, width, height, sc_images.size());
+}
+
+void device::create_sync_objects()
+{
+	image_signals.resize(sc_views.size());
+	for (auto &&[available, rendered, in_flight] : image_signals)
+	{
+		auto semaphore_info = vk::SemaphoreCreateInfo{};
+		available           = logical_device.createSemaphore(semaphore_info);
+		rendered            = logical_device.createSemaphore(semaphore_info);
+
+		auto fence_info = vk::FenceCreateInfo{
+			.flags = vk::FenceCreateFlagBits::eSignaled,
+		};
+		in_flight = logical_device.createFence(fence_info);
+	}
+
+	std::println("{}Semaphores and Fences created.{}",
+	             CLR::GRN, CLR::RESET);
 }
 
 void device::create_command_pool()
@@ -288,6 +335,18 @@ void device::create_command_pool()
 
 	std::println("{}Graphics Command Pool created.{}",
 	             CLR::GRN, CLR::RESET);
+
+	// Create Command Buffer
+
+	auto command_buffer_alloc_info = vk::CommandBufferAllocateInfo{
+		.commandPool        = gfx_command_pool,
+		.level              = vk::CommandBufferLevel::ePrimary,
+		.commandBufferCount = static_cast<uint32_t>(sc_images.size()),
+	};
+	gfx_command_buffers = logical_device.allocateCommandBuffers(command_buffer_alloc_info);
+
+	std::println("{}Command Buffers allocated.{}",
+	             CLR::GRN, CLR::RESET);
 }
 
 device::~device()
@@ -295,6 +354,7 @@ device::~device()
 	logical_device.waitIdle();
 
 	destroy_command_pool();
+	destroy_sync_objects();
 	destroy_swapchain();
 	destroy_gpu_memory_allocator();
 	destroy_surface();
@@ -329,8 +389,20 @@ void device::destroy_swapchain()
 	logical_device.destroySwapchainKHR(swap_chain);
 }
 
+void device::destroy_sync_objects()
+{
+	for (auto &&[available, rendered, in_flight] : image_signals)
+	{
+		logical_device.destroyFence(in_flight);
+		logical_device.destroySemaphore(rendered);
+		logical_device.destroySemaphore(available);
+	}
+	image_signals.clear();
+}
+
 void device::destroy_command_pool()
 {
+	gfx_command_buffers.clear();
 	logical_device.destroyCommandPool(gfx_command_pool);
 }
 
@@ -342,4 +414,86 @@ void device::surface_resized()
 	destroy_swapchain();
 
 	create_swapchain();
+}
+
+auto device::get_sc_extent() -> vk::Extent2D
+{
+	return sc_extent;
+}
+
+auto device::current_image_index() -> uint32_t
+{
+	return current_frame;
+}
+
+auto device::next_image_index() -> uint32_t
+{
+	current_frame = (current_frame + 1) % max_frame_count;
+	return current_frame;
+}
+
+auto device::next_image(uint32_t current_index) -> uint32_t
+{
+	constexpr auto wait_time = UINT_MAX;
+
+	auto sync = image_signals.at(current_index);
+
+	[[maybe_unused]] // TODO: check fence result
+	auto fence_result = logical_device.waitForFences(sync.in_flight, true, wait_time);
+
+	logical_device.resetFences(sync.in_flight);
+
+	auto [result, image_index] = logical_device.acquireNextImageKHR(swap_chain,
+	                                                                wait_time,
+	                                                                sync.available,
+	                                                                VK_NULL_HANDLE);
+	// TODO: Validate the result value
+	assert(result == vk::Result::eSuccess or      // Should normally be success
+	       result == vk::Result::eSuboptimalKHR); // happens when window resizes or closes
+	assert(image_index == current_frame);
+
+	return image_index;
+}
+
+void device::submit(uint32_t index)
+{
+	auto sync = image_signals.at(index);
+	auto cb   = get_cmd_buffer(index);
+
+	auto wait_stage = vk::PipelineStageFlags{ vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+	auto submit_info = vk::SubmitInfo{
+		.waitSemaphoreCount   = 1,
+		.pWaitSemaphores      = &sync.available,
+		.pWaitDstStageMask    = &wait_stage,
+		.commandBufferCount   = 1,
+		.pCommandBuffers      = &cb,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores    = &sync.rendered,
+	};
+
+	gfx_queue.queue.submit({ submit_info }, sync.in_flight);
+}
+
+void device::present(uint32_t index)
+{
+	auto sync = image_signals.at(index);
+
+	auto present_info = vk::PresentInfoKHR{
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores    = &sync.rendered,
+		.swapchainCount     = 1,
+		.pSwapchains        = &swap_chain,
+		.pImageIndices      = &index,
+	};
+
+	auto result = gfx_queue.queue.presentKHR(present_info);
+	// TODO: validate result's other values
+	assert(result == vk::Result::eSuccess or      // Should normally be success
+	       result == vk::Result::eSuboptimalKHR); // happens when window resizes or closes
+}
+
+auto device::get_cmd_buffer(uint32_t index) -> vk::CommandBuffer
+{
+	return gfx_command_buffers.at(index);
 }

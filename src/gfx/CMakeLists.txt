@@ -38,6 +38,7 @@ target_sources(${PRJ_LIB_NAME}
 		graphics.ixx
 		renderer.ixx
 		device.ixx
+		command_buffer.ixx
 )
 
 list(APPEND vulkan_definitions
