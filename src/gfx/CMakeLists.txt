@@ -36,6 +36,8 @@ target_sources(${PRJ_LIB_NAME}
 	# magic encantations for C++ Modules Support in CMake
 	PUBLIC FILE_SET lib_modules TYPE CXX_MODULES FILES
 		graphics.ixx
+		renderer.ixx
+		device.ixx
 )
 
 list(APPEND vulkan_definitions

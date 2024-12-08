@@ -30,6 +30,8 @@ export namespace vkl
 		vkl::clock::timer clock;
 		std::unique_ptr<vkl::window> window{ nullptr };
 		std::unique_ptr<vkl::input> input{ nullptr };
+
+		std::unique_ptr<vkl::gfx::renderer> renderer{ nullptr };
 	};
 
 }
@@ -50,7 +52,7 @@ application::application()
 			.width  = 1280,
 			.height = 768,
 			.title  = L"Vulkan Learnings"sv,
-			.style  = vkl::window::style::fixed,
+			.style  = vkl::window::style::sizeable,
 		});
 
 	// Window event callbacks
@@ -63,6 +65,9 @@ application::application()
 	input = std::make_unique<vkl::input>(
 		window->get_platform_data(),
 		std::array{ vkl::input_device::keyboard, vkl::input_device::mouse });
+
+	// Vulkan Renderer
+	renderer = std::make_unique<vkl::gfx::renderer>(window->get_platform_data());
 }
 
 auto application::on_close([[maybe_unused]] const vkl::window::close &data) -> bool
@@ -75,11 +80,11 @@ auto application::on_close([[maybe_unused]] const vkl::window::close &data) -> b
 auto application::on_resize([[maybe_unused]] const vkl::window::resize &data) -> bool
 {
 	std::println("{}Window Resized:{} {}x{}", CLR::YEL, CLR::RESET, data.width, data.height);
-	// if (renderer)
-	// {
-	// 			renderer->window_resized();
-	// 	return true;
-	// }
+	if (renderer)
+	{
+		renderer->window_resized();
+		return true;
+	}
 
 	input->toggle_mouse_lock(capture_mouse); // Resize capture zone
 
@@ -105,6 +110,9 @@ auto application::run() -> uint32_t
 	{
 		window->pump_messages();
 		input->process_messages();
+
+		renderer->update();
+		renderer->draw();
 
 		clock.tick();
 
