@@ -4,6 +4,7 @@ export module application;
 
 import std;
 import vkl_platform;
+import vkl_gfx;
 
 export namespace vkl
 {

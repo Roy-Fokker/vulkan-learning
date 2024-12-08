@@ -10,6 +10,7 @@ project(Vulkan-Learning-Project
 
 # library source folder
 add_subdirectory(src/platform)
+add_subdirectory(src/gfx)
 
 # shader source folder
 add_subdirectory(src/shaders)
