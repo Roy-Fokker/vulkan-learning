@@ -20,6 +20,8 @@ export namespace vkl
 		auto on_resize(const vkl::window::resize &data) -> bool;
 		auto on_activate(const vkl::window::activate &data) -> bool;
 
+		void update_on_input();
+
 	private:
 		bool stop_app      = false;
 		bool capture_mouse = false;
@@ -33,6 +35,8 @@ export namespace vkl
 
 using namespace vkl;
 using namespace std::string_view_literals;
+
+namespace vkl_clock = vkl::clock;
 
 application::application()
 {
@@ -69,7 +73,7 @@ auto application::on_close([[maybe_unused]] const vkl::window::close &data) -> b
 
 auto application::on_resize([[maybe_unused]] const vkl::window::resize &data) -> bool
 {
-	std::println("{}Window Resized{}", CLR::YEL, CLR::RESET);
+	std::println("{}Window Resized:{} {}x{}", CLR::YEL, CLR::RESET, data.width, data.height);
 	// if (renderer)
 	// {
 	// 			renderer->window_resized();
@@ -84,7 +88,7 @@ auto application::on_resize([[maybe_unused]] const vkl::window::resize &data) ->
 auto application::on_activate([[maybe_unused]] const vkl::window::activate &data) -> bool
 {
 	auto state = data.current_state == vkl::window::state::active ? true : false;
-	std::println("{}Window Activate: {}{}", CLR::YEL, state, CLR::RESET);
+	std::println("{}Window Activate: {}{}", CLR::YEL, CLR::RESET, state);
 
 	input->toggle_mouse_lock(capture_mouse and state); // only capture if active window
 
@@ -102,7 +106,26 @@ auto application::run() -> uint32_t
 		input->process_messages();
 
 		clock.tick();
+
+		update_on_input();
 	}
 
 	return 0;
+}
+
+void application::update_on_input()
+{
+	using btn  = vkl::input_button;
+	using axis = vkl::input_axis;
+
+	auto dt = clock.get_delta<vkl_clock::s>(); // get time since previous call to this function/reset
+	auto tt = clock.get_total<vkl_clock::s>(); // get total time since call to reset
+
+	// if escape is pressed, stop app
+	if (input->is_button_down(btn::escape))
+	{
+		stop_app = true;
+		std::println("⌚ : {:>5.2f}s, ⏱️ : {:.6f}s, 🔽 : {:10.10}",
+		             tt, dt, vkl::to_string(btn::escape));
+	}
 }
