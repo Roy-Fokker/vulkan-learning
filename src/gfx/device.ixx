@@ -24,6 +24,8 @@ export namespace vkl::gfx
 		void surface_resized();
 
 		auto get_sc_extent() -> vk::Extent2D;
+		auto get_sc_format() -> vk::Format;
+		auto get_sc_view(uint32_t index) -> vk::ImageView;
 
 		auto current_image_index() -> uint32_t;
 		auto next_image_index() -> uint32_t;
@@ -32,6 +34,7 @@ export namespace vkl::gfx
 		void present(uint32_t index);
 
 		auto get_cmd_buffer(uint32_t index) -> vk::CommandBuffer;
+		auto get_device() -> vk::Device;
 
 	private:
 		auto create_instance() -> vkb::Instance;
@@ -337,7 +340,6 @@ void device::create_command_pool()
 	             CLR::GRN, CLR::RESET);
 
 	// Create Command Buffer
-
 	auto command_buffer_alloc_info = vk::CommandBufferAllocateInfo{
 		.commandPool        = gfx_command_pool,
 		.level              = vk::CommandBufferLevel::ePrimary,
@@ -421,6 +423,16 @@ auto device::get_sc_extent() -> vk::Extent2D
 	return sc_extent;
 }
 
+auto device::get_sc_format() -> vk::Format
+{
+	return sc_format;
+}
+
+auto device::get_sc_view(uint32_t index) -> vk::ImageView
+{
+	return sc_views.at(index);
+}
+
 auto device::current_image_index() -> uint32_t
 {
 	return current_frame;
@@ -496,4 +508,9 @@ void device::present(uint32_t index)
 auto device::get_cmd_buffer(uint32_t index) -> vk::CommandBuffer
 {
 	return gfx_command_buffers.at(index);
+}
+
+auto device::get_device() -> vk::Device
+{
+	return logical_device;
 }
