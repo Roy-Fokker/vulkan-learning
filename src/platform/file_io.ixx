@@ -27,9 +27,10 @@ auto vkl::io::read_binary_file(const std::filesystem::path &filename) -> std::ve
 	auto file_size = std::filesystem::file_size(filename);
 	auto buffer    = std::vector<uint8_t>(file_size);
 
-	// file.read(reinterpret_cast<char *>(buffer.data()), file_size);
+	file.read(reinterpret_cast<char *>(buffer.data()), file_size);
 
-	buffer = vw::istream<uint8_t>(file) | rg::to<std::vector>();
+	// TODO: code below doesn't work for some reason, sizes don't match.
+	// buffer = vw::istream<uint8_t>(file) | rg::to<std::vector>();
 
 	file.close();
 
