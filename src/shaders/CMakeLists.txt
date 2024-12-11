@@ -11,6 +11,7 @@ add_library(${PRJ_SHADER_LIB_ALIAS} ALIAS ${PRJ_SHADER_LIB})
 
 # shader sources
 target_shader_sources(${PRJ_SHADER_LIB}
-        HLSL
-                
+	HLSL
+		basic_shader.vs.hlsl : vs_6_4
+		basic_shader.ps.hlsl : ps_6_4
 )
