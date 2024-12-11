@@ -26,6 +26,7 @@ export namespace vkl::gfx
 		auto get_sc_extent() -> vk::Extent2D;
 		auto get_sc_format() -> vk::Format;
 		auto get_sc_view(uint32_t index) -> vk::ImageView;
+		auto get_sc_image(uint32_t index) -> vk::Image;
 
 		auto current_image_index() -> uint32_t;
 		auto next_image_index() -> uint32_t;
@@ -431,6 +432,11 @@ auto device::get_sc_format() -> vk::Format
 auto device::get_sc_view(uint32_t index) -> vk::ImageView
 {
 	return sc_views.at(index);
+}
+
+auto device::get_sc_image(uint32_t index) -> vk::Image
+{
+	return sc_images.at(index);
 }
 
 auto device::current_image_index() -> uint32_t
