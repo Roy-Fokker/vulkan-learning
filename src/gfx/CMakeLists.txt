@@ -39,6 +39,7 @@ target_sources(${PRJ_LIB_NAME}
 		renderer.ixx
 		device.ixx
 		command_buffer.ixx
+		pipeline_basic.ixx
 )
 
 list(APPEND vulkan_definitions

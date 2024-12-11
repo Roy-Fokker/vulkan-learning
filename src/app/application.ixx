@@ -21,6 +21,7 @@ export namespace vkl
 		auto on_resize(const vkl::window::resize &data) -> bool;
 		auto on_activate(const vkl::window::activate &data) -> bool;
 
+		void setup_renderer();
 		void update_on_input();
 
 	private:
@@ -103,6 +104,8 @@ auto application::on_activate([[maybe_unused]] const vkl::window::activate &data
 
 auto application::run() -> uint32_t
 {
+	setup_renderer();
+
 	window->toggle_show();
 	clock.reset();
 
@@ -120,6 +123,14 @@ auto application::run() -> uint32_t
 	}
 
 	return 0;
+}
+
+void application::setup_renderer()
+{
+	auto vs_bin = vkl::io::read_binary_file("shaders/basic_shader.vs_6_4.spv");
+	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
+
+	renderer->add_pipeline(vs_bin, fs_bin);
 }
 
 void application::update_on_input()
