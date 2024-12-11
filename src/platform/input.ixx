@@ -502,7 +502,7 @@ auto input::get_axis_value(input_axis axis, bool absolute) const -> std::int32_t
 
 void input::set_button_down(input_button button)
 {
-	buttons_down[static_cast<std::uint16_t>(button)] = true;
+	buttons_down[std::to_underlying(button)] = true;
 }
 
 void input::set_axis_value(input_axis axis, int value)
@@ -520,8 +520,8 @@ namespace
 	auto translate_to_button(std::uint16_t vKey, std::uint16_t sCode, std::uint16_t flags) -> input_button
 	{
 		// return if the Key is out side of our enumeration range
-		if (vKey > static_cast<std::uint16_t>(input_button::oem_clear) ||
-		    vKey == static_cast<std::uint16_t>(input_button::none))
+		if (vKey > std::to_underlying(input_button::oem_clear) ||
+		    vKey == std::to_underlying(input_button::none))
 		{
 			return input_button::none;
 		}
@@ -535,11 +535,11 @@ namespace
 		switch (static_cast<input_button>(vKey))
 		{
 			// case input_button::pause:
-			// 	sCode = (isE1) ? 0x45 : static_cast<std::uint16_t>(MapVirtualKey(vKey, MAPVK_VK_TO_VSC));
+			// 	sCode = (isE1) ? 0x45 : static_cast<uint16_t>(MapVirtualKey(vKey, MAPVK_VK_TO_VSC));
 			// 	// Above is needed to convert pause into system generated keyname
 			// 	break;
 			case input_button::shift:
-				vKey = static_cast<std::uint16_t>(MapVirtualKey(sCode, MAPVK_VSC_TO_VK_EX));
+				vKey = static_cast<uint16_t>(MapVirtualKey(sCode, MAPVK_VSC_TO_VK_EX));
 				break;
 			case input_button::control:
 				return ((isE0) ? input_button::right_control : input_button::left_control);
@@ -736,7 +736,7 @@ void input::process_keyboard(const keyboard_data &data)
 	}
 
 	auto button = translate_to_button(vKey, sCode, flags);
-	vKey        = static_cast<std::uint16_t>(button);
+	vKey        = std::to_underlying(button);
 
 	// TODO: Figure out what new key states [up, down, pressed]
 
@@ -755,15 +755,15 @@ void input::process_keyboard(const keyboard_data &data)
 	{
 		case input_button::left_shift:
 		case input_button::right_shift:
-			buttons_down[static_cast<std::uint16_t>(input_button::shift)] = kState;
+			buttons_down[std::to_underlying(input_button::shift)] = kState;
 			break;
 		case input_button::left_control:
 		case input_button::right_control:
-			buttons_down[static_cast<std::uint16_t>(input_button::control)] = kState;
+			buttons_down[std::to_underlying(input_button::control)] = kState;
 			break;
 		case input_button::left_alt:
 		case input_button::right_alt:
-			buttons_down[static_cast<std::uint16_t>(input_button::alt)] = kState;
+			buttons_down[std::to_underlying(input_button::alt)] = kState;
 			break;
 	}
 }
@@ -773,7 +773,7 @@ void input::process_mouse(const mouse_data &data)
 	auto btnFlags = data.usButtonFlags;
 
 	auto button = translate_to_button(btnFlags);
-	auto vBtn   = static_cast<std::uint16_t>(button);
+	auto vBtn   = std::to_underlying(button);
 
 	// What is the button state?
 	bool btnState{ false };
