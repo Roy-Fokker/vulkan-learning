@@ -36,6 +36,7 @@ export namespace vkl::gfx
 
 		auto get_cmd_buffer(uint32_t index) -> vk::CommandBuffer;
 		auto get_device() -> vk::Device;
+		auto get_allocator() -> VmaAllocator;
 
 	private:
 		auto create_instance() -> vkb::Instance;
@@ -520,4 +521,9 @@ auto device::get_cmd_buffer(uint32_t index) -> vk::CommandBuffer
 auto device::get_device() -> vk::Device
 {
 	return logical_device;
+}
+
+auto device::get_allocator() -> VmaAllocator
+{
+	return mem_allocator;
 }
