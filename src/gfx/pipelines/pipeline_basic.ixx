@@ -7,7 +7,7 @@ import vkl_platform;
 
 export namespace vkl::gfx
 {
-	class pipeline final
+	class pipeline_basic final
 	{
 	public:
 		struct description
@@ -27,8 +27,8 @@ export namespace vkl::gfx
 			vk::Format depth_format;
 		};
 
-		pipeline(vk::Device device, const description &desc);
-		~pipeline();
+		pipeline_basic(vk::Device device, const description &desc);
+		~pipeline_basic();
 
 		[[nodiscard]] auto get_pipeline() const -> vk::Pipeline;
 		[[nodiscard]] auto get_layout() const -> vk::PipelineLayout;
@@ -64,7 +64,7 @@ namespace
 	}
 }
 
-pipeline::pipeline(vk::Device device_, const description &desc)
+pipeline_basic::pipeline_basic(vk::Device device_, const description &desc)
 	: device(device_)
 {
 	// Assume desc::shaders will always have vertex and fragment shaders
@@ -196,24 +196,24 @@ pipeline::pipeline(vk::Device device_, const description &desc)
 	             CLR::GRN, CLR::RESET);
 }
 
-pipeline::~pipeline()
+pipeline_basic::~pipeline_basic()
 {
 	device.waitIdle();
 	device.destroyPipelineLayout(layout);
 	device.destroyPipeline(pl);
 }
 
-auto pipeline::get_pipeline() const -> vk::Pipeline
+auto pipeline_basic::get_pipeline() const -> vk::Pipeline
 {
 	return pl;
 }
 
-auto pipeline::get_layout() const -> vk::PipelineLayout
+auto pipeline_basic::get_layout() const -> vk::PipelineLayout
 {
 	return layout;
 }
 
-auto pipeline::create_shader_module(const std::span<const uint8_t> shader_bin) -> vk::ShaderModule
+auto pipeline_basic::create_shader_module(const std::span<const uint8_t> shader_bin) -> vk::ShaderModule
 {
 	auto shader_info = vk::ShaderModuleCreateInfo{
 		.codeSize = shader_bin.size(),
