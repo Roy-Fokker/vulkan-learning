@@ -210,17 +210,18 @@ void device::pick_gpu_and_queues(vkb::Instance &vkb_inst)
 	};
 
 	auto phy_dev_selector = vkb::PhysicalDeviceSelector{ vkb_inst };
-	auto phy_dev_ret      = phy_dev_selector
-	                       .set_minimum_version(1, 3)
-	                       .set_required_features_13(features1_3)
-	                       .set_required_features_12(features1_2)
-	                       .add_required_extension(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)
-	                       .add_required_extension_features(descriptor_buffer_feature)
-	                       .set_surface(surface)
-	                       .select()
-	                       .value();
+	auto phy_dev_select   = phy_dev_selector
+	                          .set_minimum_version(1, 3)
+	                          .set_required_features_13(features1_3)
+	                          .set_required_features_12(features1_2)
+	                          .add_required_extension(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)
+	                          .add_required_extension_features(descriptor_buffer_feature)
+	                          .set_surface(surface)
+	                          .select();
+	assert(phy_dev_select.has_value() == true);
 
-	auto res = phy_dev_ret.enable_extension_features_if_present(descriptor_buffer_feature);
+	auto phy_dev_ret = phy_dev_select.value();
+	auto res         = phy_dev_ret.enable_extension_features_if_present(descriptor_buffer_feature);
 	assert(res == true);
 
 	auto device_builder = vkb::DeviceBuilder{ phy_dev_ret };
