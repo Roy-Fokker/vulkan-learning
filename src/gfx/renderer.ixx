@@ -27,7 +27,7 @@ export namespace vkl::gfx
 	private:
 		std::unique_ptr<vkl::gfx::device> device{ nullptr };
 
-		std::vector<pipeline> pipelines;
+		std::vector<pipeline_basic> pipelines;
 	};
 }
 
@@ -56,7 +56,7 @@ void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t
 {
 	pipelines.emplace_back(
 		device->get_device(),
-		pipeline::description{
+		pipeline_basic::description{
 			.shaders       = { vs, fs },
 			.topology      = vk::PrimitiveTopology::eTriangleList,
 			.polygon_mode  = vk::PolygonMode::eFill,
