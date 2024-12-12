@@ -39,6 +39,7 @@ target_sources(${PRJ_LIB_NAME}
 		renderer.ixx
 		device.ixx
 		command_buffer.ixx
+		buffer.ixx
 		pipelines/pipeline_basic.ixx
 )
 

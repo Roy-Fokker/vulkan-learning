@@ -7,6 +7,8 @@ import vkl_platform;
 import :device;
 import :command_buffer;
 import :pipeline_basic;
+import :pipeline_pc_ubo;
+import :buffer;
 
 export namespace vkl::gfx
 {
@@ -23,11 +25,14 @@ export namespace vkl::gfx
 		GFX_API void draw();
 
 		GFX_API void add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs);
+		GFX_API void add_mesh(std::span<const std::byte> vertices, std::span<const std::byte> indicies);
 
 	private:
 		std::unique_ptr<vkl::gfx::device> device{ nullptr };
 
-		std::vector<pipeline_basic> pipelines;
+		std::unique_ptr<pipeline_basic> pl_basic;
+		std::unique_ptr<buffer> vertex_buffer;
+		std::unique_ptr<buffer> index_buffer;
 	};
 }
 
@@ -54,7 +59,7 @@ void renderer::window_resized()
 
 void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs)
 {
-	pipelines.emplace_back(
+	pl_basic = std::make_unique<pipeline_basic>(
 		device->get_device(),
 		pipeline_basic::description{
 			.shaders       = { vs, fs },
@@ -67,12 +72,35 @@ void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t
 		});
 }
 
+void renderer::add_mesh(std::span<const std::byte> vertices, std::span<const std::byte> indicies)
+{
+	using bf = vk::BufferUsageFlagBits;
+
+	auto allocator = device->get_allocator();
+
+	vertex_buffer = std::make_unique<buffer>(
+		allocator,
+		buffer::description{
+			.allocation_size = static_cast<uint32_t>(vertices.size()),
+			.usage           = bf::eStorageBuffer | bf::eShaderDeviceAddress,
+			.memory_usage    = VMA_MEMORY_USAGE_AUTO,
+		});
+	vertex_buffer->copy(vertices);
+
+	index_buffer = std::make_unique<buffer>(
+		allocator,
+		buffer::description{
+			.allocation_size = static_cast<uint32_t>(indicies.size()),
+			.usage           = bf::eIndexBuffer,
+			.memory_usage    = VMA_MEMORY_USAGE_AUTO,
+		});
+	index_buffer->copy(indicies);
+}
+
 void renderer::update(const std::array<float, 4> &clear_color)
 {
 	auto current_frame = device->current_image_index();
 	current_frame      = device->next_image(current_frame);
-
-	auto &pl = pipelines.at(0);
 
 	auto extent      = device->get_sc_extent();
 	auto clear_value = vk::ClearValue{
@@ -156,10 +184,12 @@ void renderer::update(const std::array<float, 4> &clear_color)
 	    depth_range);
 	*/
 
+	auto pl = pl_basic->get_pipeline();
+
 	cb.begin_rendering(rendering_info);
 	cb.set(viewports);
 	cb.set(scissors);
-	cb.bind(vk::PipelineBindPoint::eGraphics, pl.get_pipeline());
+	cb.bind(vk::PipelineBindPoint::eGraphics, pl);
 
 	cb.draw_model(3, 1, 0, 0);
 
