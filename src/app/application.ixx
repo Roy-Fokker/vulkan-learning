@@ -49,6 +49,39 @@ namespace
 	{
 		glm::vec3 pos;
 		glm::vec3 colr;
+
+		// For now using constexpr std::array this might be okay for most uses.
+		// std::vector object is not allowed to be used in constexpr context.
+		constexpr static auto get_binding_descriptions()
+		{
+			return std::array{
+				vk::VertexInputBindingDescription{
+					.binding   = 0,
+					.stride    = sizeof(vertex),
+					.inputRate = vk::VertexInputRate::eVertex,
+				},
+			};
+		}
+
+		// For now using constexpr std::array this might be okay for most uses.
+		// std::vector object is not allowed to be used in constexpr context.
+		constexpr static auto get_attribute_descriptions()
+		{
+			return std::array{
+				vk::VertexInputAttributeDescription{
+					.location = 0,
+					.binding  = 0,
+					.format   = vk::Format::eR32G32B32Sfloat,
+					.offset   = offsetof(vertex, pos),
+				},
+				vk::VertexInputAttributeDescription{
+					.location = 1,
+					.binding  = 0,
+					.format   = vk::Format::eR32G32B32Sfloat,
+					.offset   = offsetof(vertex, colr),
+				},
+			};
+		}
 	};
 }
 
@@ -115,6 +148,7 @@ auto application::on_activate([[maybe_unused]] const vkl::window::activate &data
 auto application::run() -> uint32_t
 {
 	setup_renderer();
+	setup_mesh();
 
 	window->toggle_show();
 	clock.reset();
@@ -137,10 +171,13 @@ auto application::run() -> uint32_t
 
 void application::setup_renderer()
 {
-	auto vs_bin = vkl::io::read_binary_file("shaders/basic_shader.vs_6_4.spv");
+	auto vs_bin = vkl::io::read_binary_file("shaders/basic_mesh.vs_6_4.spv");
 	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
 
-	renderer->add_pipeline(vs_bin, fs_bin);
+	renderer->add_pipeline(vs_bin, fs_bin, {
+											   vertex::get_attribute_descriptions(),
+											   vertex::get_binding_descriptions(),
+										   });
 }
 
 void vkl::application::setup_mesh()

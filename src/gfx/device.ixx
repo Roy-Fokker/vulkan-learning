@@ -202,7 +202,12 @@ void device::pick_gpu_and_queues(vkb::Instance &vkb_inst)
 		.descriptorBindingPartiallyBound          = true,
 		.descriptorBindingVariableDescriptorCount = true,
 		.runtimeDescriptorArray                   = true,
+		.timelineSemaphore                        = true,
 		.bufferDeviceAddress                      = true,
+	};
+
+	auto features = vk::PhysicalDeviceFeatures{
+		.shaderInt64 = true,
 	};
 
 	auto descriptor_buffer_feature = vk::PhysicalDeviceDescriptorBufferFeaturesEXT{
@@ -215,6 +220,7 @@ void device::pick_gpu_and_queues(vkb::Instance &vkb_inst)
 	                          .set_minimum_version(1, 3)
 	                          .set_required_features_13(features1_3)
 	                          .set_required_features_12(features1_2)
+	                          .set_required_features(features)
 	                          .add_required_extension(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)
 	                          .add_required_extension_features(descriptor_buffer_feature)
 	                          .set_surface(surface)

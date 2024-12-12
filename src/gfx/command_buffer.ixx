@@ -28,13 +28,17 @@ export namespace vkl::gfx
 		void end_rendering();
 
 		void bind(vk::PipelineBindPoint bind_point, const vk::Pipeline &pl);
+		void bind(uint32_t firstBinding, vk::Buffer vertex_buffer);
+		void bind(vk::Buffer index_buffer, vk::IndexType type);
 		void set(std::span<vk::Viewport> viewports);
 		void set(std::span<vk::Rect2D> scissors);
+		void push_constants(vk::PipelineLayout layout, vk::ShaderStageFlags shader_stages, uint32_t offset, std::span<const std::byte> data);
 
 		void image_layout_transition(vk::Image image, const image_transition_info &transition_info);
 		void image_layout_transition(vk::Image image, vk::ImageLayout old_layout, vk::ImageLayout new_layout, const vk::ImageSubresourceRange &subresource_range);
 
 		void draw_model(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance);
+		void draw_indexed_model(uint32_t index_count, uint32_t instance_count, uint32_t first_index, uint32_t vertex_offset, uint32_t instance_offset);
 	};
 }
 
@@ -135,6 +139,18 @@ void command_buffer::bind(vk::PipelineBindPoint bind_point, const vk::Pipeline &
 	cb.bindPipeline(bind_point, pl);
 }
 
+void command_buffer::bind(uint32_t firstBinding, vk::Buffer vertex_buffer)
+{
+	auto offset = vk::DeviceSize{ 0 };
+	cb.bindVertexBuffers(firstBinding, { vertex_buffer }, offset);
+}
+
+void command_buffer::bind(vk::Buffer index_buffer, vk::IndexType type)
+{
+	auto offset = vk::DeviceSize{ 0 };
+	cb.bindIndexBuffer(index_buffer, offset, type);
+}
+
 void command_buffer::set(std::span<vk::Viewport> viewports)
 {
 	cb.setViewport(0, viewports);
@@ -143,6 +159,16 @@ void command_buffer::set(std::span<vk::Viewport> viewports)
 void command_buffer::set(std::span<vk::Rect2D> scissors)
 {
 	cb.setScissor(0, scissors);
+}
+
+void command_buffer::push_constants(vk::PipelineLayout layout, vk::ShaderStageFlags shader_stages, uint32_t offset, std::span<const std::byte> data)
+{
+	cb.pushConstants(
+		layout,
+		shader_stages,
+		offset,
+		static_cast<uint32_t>(data.size()),
+		data.data());
 }
 
 void command_buffer::image_layout_transition(vk::Image image, const image_transition_info &iti)
@@ -185,4 +211,14 @@ void command_buffer::draw_model(uint32_t vertex_count, uint32_t instance_count, 
 		instance_count,
 		first_vertex,
 		first_instance);
+}
+
+void command_buffer::draw_indexed_model(uint32_t index_count, uint32_t instance_count, uint32_t index_offset, uint32_t vertex_offset, uint32_t instance_offset)
+{
+	cb.drawIndexed(
+		index_count,
+		instance_count,
+		index_offset,
+		vertex_offset,
+		instance_offset);
 }

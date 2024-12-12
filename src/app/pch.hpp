@@ -10,3 +10,6 @@
 // GLM math library
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
+// Vulkan Headers
+#include <vulkan/vulkan.hpp>

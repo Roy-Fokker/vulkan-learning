@@ -36,7 +36,8 @@ export namespace vkl::gfx
 
 using namespace vkl::gfx;
 
-buffer::buffer(VmaAllocator allocator, const description &desc)
+buffer::buffer(VmaAllocator allocator_, const description &desc)
+	: allocator(allocator_)
 {
 	auto gpu_buffer_info = vk::BufferCreateInfo{
 		.size  = desc.allocation_size,
@@ -44,7 +45,7 @@ buffer::buffer(VmaAllocator allocator, const description &desc)
 	};
 
 	auto vma_alloc_info = VmaAllocationCreateInfo{
-		.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+		.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
 		.usage = desc.memory_usage,
 	};
 

@@ -7,11 +7,18 @@ import vkl_platform;
 import :device;
 import :command_buffer;
 import :pipeline_basic;
-import :pipeline_pc_ubo;
+import :pipeline_pc_vb;
 import :buffer;
 
 export namespace vkl::gfx
 {
+	using vertex_description = pipeline_pc_vb::description::vertex_description;
+
+	struct push_constant
+	{
+		alignas(16) vk::DeviceAddress vertex_buffer_address;
+	};
+
 	class renderer final : private vkl::non_copyable
 	{
 	public:
@@ -24,19 +31,34 @@ export namespace vkl::gfx
 		GFX_API void update(const std::array<float, 4> &clear_color);
 		GFX_API void draw();
 
-		GFX_API void add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs);
+		GFX_API void add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs, const vertex_description &vert_desc);
 		GFX_API void add_mesh(std::span<const std::byte> vertices, std::span<const std::byte> indicies);
 
 	private:
 		std::unique_ptr<vkl::gfx::device> device{ nullptr };
 
-		std::unique_ptr<pipeline_basic> pl_basic;
+		// std::unique_ptr<pipeline_basic> pl_basic;
+		std::unique_ptr<pipeline_pc_vb> pl_pc_vb;
 		std::unique_ptr<buffer> vertex_buffer;
 		std::unique_ptr<buffer> index_buffer;
+
+		push_constant pc{};
 	};
 }
 
 using namespace vkl;
+
+namespace
+{
+	template <class T>
+	auto as_byte_span(const T &src) -> std::span<const std::byte>
+	{
+		return std::span{
+			reinterpret_cast<const std::byte *>(&src),
+			sizeof(T)
+		};
+	}
+}
 
 renderer::renderer(vkl::window::platform_data *data)
 {
@@ -50,6 +72,8 @@ renderer::~renderer()
 {
 	std::println("{}Destroy renderer.{}",
 	             CLR::BLU, CLR::RESET);
+
+	device->get_device().waitIdle();
 }
 
 void renderer::window_resized()
@@ -57,19 +81,39 @@ void renderer::window_resized()
 	device->surface_resized();
 }
 
-void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs)
+void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs, const vertex_description &vert_desc)
 {
-	pl_basic = std::make_unique<pipeline_basic>(
+	// pl_basic = std::make_unique<pipeline_basic>(
+	// 	device->get_device(),
+	// 	pipeline_basic::description{
+	// 		.shaders       = { vs, fs },
+	// 		.topology      = vk::PrimitiveTopology::eTriangleList,
+	// 		.polygon_mode  = vk::PolygonMode::eFill,
+	// 		.cull_mode     = vk::CullModeFlagBits::eFront,
+	// 		.front_face    = vk::FrontFace::eCounterClockwise,
+	// 		.color_formats = std::array{ device->get_sc_format() },
+	// 		.depth_format  = vk::Format::eUndefined,
+	// 	});
+
+	pl_pc_vb = std::make_unique<pipeline_pc_vb>(
 		device->get_device(),
-		pipeline_basic::description{
+		pipeline_pc_vb::description{
 			.shaders       = { vs, fs },
+			.vertex_input  = vert_desc,
 			.topology      = vk::PrimitiveTopology::eTriangleList,
 			.polygon_mode  = vk::PolygonMode::eFill,
 			.cull_mode     = vk::CullModeFlagBits::eFront,
 			.front_face    = vk::FrontFace::eCounterClockwise,
 			.color_formats = std::array{ device->get_sc_format() },
 			.depth_format  = vk::Format::eUndefined,
+			.pc_rng        = vk::PushConstantRange{
+					   .stageFlags = vk::ShaderStageFlagBits::eVertex,
+					   .offset     = 0,
+					   .size       = sizeof(pc) },
 		});
+
+	// TODO: add push constant stuff
+	// https://vkguide.dev/docs/new_chapter_3/mesh_buffers/
 }
 
 void renderer::add_mesh(std::span<const std::byte> vertices, std::span<const std::byte> indicies)
@@ -82,10 +126,12 @@ void renderer::add_mesh(std::span<const std::byte> vertices, std::span<const std
 		allocator,
 		buffer::description{
 			.allocation_size = static_cast<uint32_t>(vertices.size()),
-			.usage           = bf::eStorageBuffer | bf::eShaderDeviceAddress,
+			.usage           = bf::eVertexBuffer | bf::eShaderDeviceAddress,
 			.memory_usage    = VMA_MEMORY_USAGE_AUTO,
 		});
 	vertex_buffer->copy(vertices);
+
+	pc.vertex_buffer_address = vertex_buffer->get_gpu_address(device->get_device());
 
 	index_buffer = std::make_unique<buffer>(
 		allocator,
@@ -184,14 +230,22 @@ void renderer::update(const std::array<float, 4> &clear_color)
 	    depth_range);
 	*/
 
-	auto pl = pl_basic->get_pipeline();
+	auto pl        = pl_pc_vb->get_pipeline();
+	auto pl_layout = pl_pc_vb->get_layout();
 
 	cb.begin_rendering(rendering_info);
 	cb.set(viewports);
 	cb.set(scissors);
 	cb.bind(vk::PipelineBindPoint::eGraphics, pl);
+	cb.bind(0, vertex_buffer->get_buffer());
+	cb.bind(index_buffer->get_buffer(), vk::IndexType::eUint32);
+	cb.push_constants(
+		pl_layout,
+		vk::ShaderStageFlagBits::eVertex,
+		0,
+		as_byte_span(pc));
 
-	cb.draw_model(3, 1, 0, 0);
+	cb.draw_indexed_model(3, 1, 0, 0, 0);
 
 	cb.end_rendering();
 
