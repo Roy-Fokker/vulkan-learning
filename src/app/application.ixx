@@ -22,6 +22,7 @@ export namespace vkl
 		auto on_activate(const vkl::window::activate &data) -> bool;
 
 		void setup_renderer();
+		void setup_mesh();
 		void update_on_input();
 
 	private:
@@ -41,6 +42,15 @@ using namespace vkl;
 using namespace std::string_view_literals;
 
 namespace vkl_clock = vkl::clock;
+
+namespace
+{
+	struct vertex
+	{
+		glm::vec3 pos;
+		glm::vec3 colr;
+	};
+}
 
 application::application()
 {
@@ -131,6 +141,25 @@ void application::setup_renderer()
 	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
 
 	renderer->add_pipeline(vs_bin, fs_bin);
+}
+
+void vkl::application::setup_mesh()
+{
+	auto triangle_vertices = std::vector{
+		vertex{ { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+		vertex{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+		vertex{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+	};
+	auto vtx_byte_size  = sizeof(vertex) * triangle_vertices.size();
+	auto vtx_byte_start = reinterpret_cast<const std::byte *>(triangle_vertices.data());
+	auto vtx_span       = std::span<const std::byte>{ vtx_byte_start, vtx_byte_size };
+
+	auto triangle_indicies = std::vector<uint32_t>{ 0, 1, 2 };
+	auto idx_byte_size     = sizeof(uint32_t) * triangle_indicies.size();
+	auto idx_byte_start    = reinterpret_cast<const std::byte *>(triangle_indicies.data());
+	auto idx_span          = std::span<const std::byte>{ idx_byte_start, idx_byte_size };
+
+	renderer->add_mesh(vtx_span, idx_span);
 }
 
 void application::update_on_input()
