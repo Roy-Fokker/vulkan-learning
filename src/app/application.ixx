@@ -48,7 +48,7 @@ namespace
 	struct vertex
 	{
 		glm::vec3 pos;
-		glm::vec3 colr;
+		glm::vec4 colr;
 
 		// For now using constexpr std::array this might be okay for most uses.
 		// std::vector object is not allowed to be used in constexpr context.
@@ -77,7 +77,7 @@ namespace
 				vk::VertexInputAttributeDescription{
 					.location = 1,
 					.binding  = 0,
-					.format   = vk::Format::eR32G32B32Sfloat,
+					.format   = vk::Format::eR32G32B32A32Sfloat,
 					.offset   = offsetof(vertex, colr),
 				},
 			};
@@ -173,7 +173,7 @@ void application::setup_renderer()
 {
 	std::println("Loading Shader files.");
 
-	auto vs_bin = vkl::io::read_binary_file("shaders/basic_mesh.vs_6_4.spv");
+	auto vs_bin = vkl::io::read_binary_file("shaders/basic_color_blend.vs_6_4.spv");
 	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
 
 	std::println("Add pipeline.");
@@ -187,9 +187,9 @@ void vkl::application::setup_mesh()
 {
 	std::println("Create Mesh");
 	auto triangle_vertices = std::vector{
-		vertex{ { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-		vertex{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-		vertex{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+		vertex{ { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 0.33f } },
+		vertex{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.66f } },
+		vertex{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.f } },
 	};
 	auto vtx_byte_size  = sizeof(vertex) * triangle_vertices.size();
 	auto vtx_byte_start = reinterpret_cast<const std::byte *>(triangle_vertices.data());

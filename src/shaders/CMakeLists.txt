@@ -15,4 +15,5 @@ target_shader_sources(${PRJ_SHADER_LIB}
 		basic_shader.vs.hlsl : vs_6_4
 		basic_shader.ps.hlsl : ps_6_4
 		basic_mesh.vs.hlsl : vs_6_4
+		basic_color_blend.vs.hlsl : vs_6_4
 )

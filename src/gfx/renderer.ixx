@@ -8,11 +8,12 @@ import :device;
 import :command_buffer;
 import :pipeline_basic;
 import :pipeline_pc_vb;
+import :pipeline_pc_vb_cb;
 import :buffer;
 
 export namespace vkl::gfx
 {
-	using vertex_description = pipeline_pc_vb::description::vertex_description;
+	using vertex_description = pipeline_pc_vb_cb::description::vertex_description;
 
 	struct push_constant
 	{
@@ -38,7 +39,8 @@ export namespace vkl::gfx
 		std::unique_ptr<vkl::gfx::device> device{ nullptr };
 
 		// std::unique_ptr<pipeline_basic> pl_basic;
-		std::unique_ptr<pipeline_pc_vb> pl_pc_vb;
+		// std::unique_ptr<pipeline_pc_vb> pl_pc_vb;
+		std::unique_ptr<pipeline_pc_vb_cb> pl_pc_vb_cb;
 		std::unique_ptr<buffer> vertex_buffer;
 		std::unique_ptr<buffer> index_buffer;
 
@@ -83,23 +85,12 @@ void renderer::window_resized()
 
 void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t> fs, const vertex_description &vert_desc)
 {
-	// pl_basic = std::make_unique<pipeline_basic>(
-	// 	device->get_device(),
-	// 	pipeline_basic::description{
-	// 		.shaders       = { vs, fs },
-	// 		.topology      = vk::PrimitiveTopology::eTriangleList,
-	// 		.polygon_mode  = vk::PolygonMode::eFill,
-	// 		.cull_mode     = vk::CullModeFlagBits::eFront,
-	// 		.front_face    = vk::FrontFace::eCounterClockwise,
-	// 		.color_formats = std::array{ device->get_sc_format() },
-	// 		.depth_format  = vk::Format::eUndefined,
-	// 	});
-
-	pl_pc_vb = std::make_unique<pipeline_pc_vb>(
+	pl_pc_vb_cb = std::make_unique<pipeline_pc_vb_cb>(
 		device->get_device(),
-		pipeline_pc_vb::description{
+		pipeline_pc_vb_cb::description{
 			.shaders       = { vs, fs },
 			.vertex_input  = vert_desc,
+			.blend_type    = color_blend_type::alphablend,
 			.topology      = vk::PrimitiveTopology::eTriangleList,
 			.polygon_mode  = vk::PolygonMode::eFill,
 			.cull_mode     = vk::CullModeFlagBits::eFront,
@@ -227,8 +218,8 @@ void renderer::update(const std::array<float, 4> &clear_color)
 	    depth_range);
 	*/
 
-	auto pl        = pl_pc_vb->get_pipeline();
-	auto pl_layout = pl_pc_vb->get_layout();
+	auto pl        = pl_pc_vb_cb->get_pipeline();
+	auto pl_layout = pl_pc_vb_cb->get_layout();
 
 	cb.begin_rendering(rendering_info);
 	cb.set(viewports);

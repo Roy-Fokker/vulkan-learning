@@ -42,6 +42,7 @@ target_sources(${PRJ_LIB_NAME}
 		buffer.ixx
 		pipelines/pipeline_basic.ixx
 		pipelines/pipeline_pc_vb.ixx
+		pipelines/pipeline_pc_vb_cb.ixx
 )
 
 list(APPEND vulkan_definitions
