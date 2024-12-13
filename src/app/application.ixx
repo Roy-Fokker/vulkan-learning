@@ -171,9 +171,12 @@ auto application::run() -> uint32_t
 
 void application::setup_renderer()
 {
+	std::println("Loading Shader files.");
+
 	auto vs_bin = vkl::io::read_binary_file("shaders/basic_mesh.vs_6_4.spv");
 	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
 
+	std::println("Add pipeline.");
 	renderer->add_pipeline(vs_bin, fs_bin, {
 											   vertex::get_attribute_descriptions(),
 											   vertex::get_binding_descriptions(),
@@ -182,6 +185,7 @@ void application::setup_renderer()
 
 void vkl::application::setup_mesh()
 {
+	std::println("Create Mesh");
 	auto triangle_vertices = std::vector{
 		vertex{ { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
 		vertex{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
@@ -196,6 +200,7 @@ void vkl::application::setup_mesh()
 	auto idx_byte_start    = reinterpret_cast<const std::byte *>(triangle_indicies.data());
 	auto idx_span          = std::span<const std::byte>{ idx_byte_start, idx_byte_size };
 
+	std::println("Add mesh to renderer.");
 	renderer->add_mesh(vtx_span, idx_span);
 }
 

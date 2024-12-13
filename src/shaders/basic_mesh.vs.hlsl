@@ -10,6 +10,14 @@ struct VSOUPUT
 	float4 color : COLOR0;
 };
 
+struct BufferAddr
+{
+	uint64_t addr;
+};
+
+[[vk::push_constant]]
+ConstantBuffer<BufferAddr> buffer;
+
 VSOUPUT main(VS_INPUT input)
 {
 	VSOUPUT output = {

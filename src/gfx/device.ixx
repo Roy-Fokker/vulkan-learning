@@ -225,6 +225,9 @@ void device::pick_gpu_and_queues(vkb::Instance &vkb_inst)
 	                          .add_required_extension_features(descriptor_buffer_feature)
 	                          .set_surface(surface)
 	                          .select();
+	if (not phy_dev_select.has_value())
+		std::println("Return value: {}", phy_dev_select.error().message());
+
 	assert(phy_dev_select.has_value() == true);
 
 	auto phy_dev_ret = phy_dev_select.value();
