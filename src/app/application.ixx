@@ -153,12 +153,14 @@ auto application::run() -> uint32_t
 	window->toggle_show();
 	clock.reset();
 
+	auto clear_color = std::array{ 0.4f, 0.4f, 0.7f, 0.0f };
+
 	while (not stop_app)
 	{
 		window->pump_messages();
 		input->process_messages();
 
-		renderer->update(std::array{ 0.4f, 0.4f, 0.7f, 0.0f });
+		renderer->update(clear_color);
 		renderer->draw();
 
 		clock.tick();
@@ -177,10 +179,13 @@ void application::setup_renderer()
 	auto fs_bin = vkl::io::read_binary_file("shaders/basic_shader.ps_6_4.spv");
 
 	std::println("Add pipeline.");
-	renderer->add_pipeline(vs_bin, fs_bin, {
-											   vertex::get_attribute_descriptions(),
-											   vertex::get_binding_descriptions(),
-										   });
+	renderer->add_pipeline(
+		vs_bin,
+		fs_bin,
+		{
+			vertex::get_attribute_descriptions(),
+			vertex::get_binding_descriptions(),
+		});
 }
 
 void vkl::application::setup_mesh()
@@ -191,14 +196,10 @@ void vkl::application::setup_mesh()
 		vertex{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.66f } },
 		vertex{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.f } },
 	};
-	auto vtx_byte_size  = sizeof(vertex) * triangle_vertices.size();
-	auto vtx_byte_start = reinterpret_cast<const std::byte *>(triangle_vertices.data());
-	auto vtx_span       = std::span<const std::byte>{ vtx_byte_start, vtx_byte_size };
+	auto vtx_span = as_byte_span<vertex>(triangle_vertices);
 
 	auto triangle_indicies = std::vector<uint32_t>{ 0, 1, 2 };
-	auto idx_byte_size     = sizeof(uint32_t) * triangle_indicies.size();
-	auto idx_byte_start    = reinterpret_cast<const std::byte *>(triangle_indicies.data());
-	auto idx_span          = std::span<const std::byte>{ idx_byte_start, idx_byte_size };
+	auto idx_span          = as_byte_span<uint32_t>(triangle_indicies);
 
 	std::println("Add mesh to renderer.");
 	renderer->add_mesh(vtx_span, idx_span);

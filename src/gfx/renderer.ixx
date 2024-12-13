@@ -52,14 +52,6 @@ using namespace vkl;
 
 namespace
 {
-	template <class T>
-	auto as_byte_span(const T &src) -> std::span<const std::byte>
-	{
-		return std::span{
-			reinterpret_cast<const std::byte *>(&src),
-			sizeof(T)
-		};
-	}
 }
 
 renderer::renderer(vkl::window::platform_data *data)
