@@ -111,9 +111,6 @@ void renderer::add_pipeline(std::span<const uint8_t> vs, std::span<const uint8_t
 					   .offset     = 0,
 					   .size       = sizeof(pc) },
 		});
-
-	// TODO: add push constant stuff
-	// https://vkguide.dev/docs/new_chapter_3/mesh_buffers/
 }
 
 void renderer::add_mesh(std::span<const std::byte> vertices, std::span<const std::byte> indicies)

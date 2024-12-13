@@ -9,8 +9,6 @@ export namespace vkl::io
 	auto read_binary_file(const std::filesystem::path &filename) -> std::vector<std::uint8_t>;
 }
 
-// TODO: use ranges to read in data.
-
 using namespace vkl::io;
 namespace vw = std::views;
 namespace rg = std::ranges;
